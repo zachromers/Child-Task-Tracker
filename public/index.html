@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Child Task Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #eee;
+        }
+
+        .section {
+            background-color: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            margin-bottom: 15px;
+            color: #e94560;
+            font-size: 1.2rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #0f3460;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        input::placeholder {
+            color: #888;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #e94560;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .btn-primary {
+            background-color: #e94560;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background-color: #0f3460;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background-color: #c62828;
+            color: #fff;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-section label {
+            color: #aaa;
+        }
+
+        .children-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .child-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #0f3460;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .child-tag .delete-child {
+            background: none;
+            border: none;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .tasks-container {
+            margin-top: 15px;
+        }
+
+        .task-group {
+            margin-bottom: 20px;
+        }
+
+        .task-group h3 {
+            color: #e94560;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background-color: #0f3460;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #e94560;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .task-meta span {
+            margin-right: 10px;
+        }
+
+        .frequency-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .frequency-daily { background-color: #4caf50; }
+        .frequency-weekly { background-color: #2196f3; }
+        .frequency-monthly { background-color: #ff9800; }
+        .frequency-one-time { background-color: #9c27b0; }
+
+        .delete-task {
+            background: none;
+            border: none;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+        }
+
+        .no-tasks {
+            text-align: center;
+            color: #666;
+            padding: 30px;
+        }
+
+        #task-name {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Child Task Tracker</h1>
+
+        <!-- Add Child Section -->
+        <div class="section">
+            <h2>Manage Children</h2>
+            <div class="form-row">
+                <input type="text" id="child-name" placeholder="Child's name">
+                <button class="btn-primary" onclick="addChild()">Add Child</button>
+            </div>
+            <div class="children-list" id="children-list"></div>
+        </div>
+
+        <!-- Add Task Section -->
+        <div class="section">
+            <h2>Add New Task</h2>
+            <div class="form-row">
+                <input type="text" id="task-name" placeholder="Task description">
+                <select id="task-frequency">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="one-time">One-time</option>
+                </select>
+                <select id="task-child">
+                    <option value="">Select child...</option>
+                </select>
+                <button class="btn-primary" onclick="addTask()">Add Task</button>
+            </div>
+        </div>
+
+        <!-- Filter & Tasks Section -->
+        <div class="section">
+            <h2>Tasks</h2>
+            <div class="filter-section">
+                <label>Filter by child:</label>
+                <select id="filter-child" onchange="loadTasks()">
+                    <option value="">All Children</option>
+                </select>
+            </div>
+            <div class="tasks-container" id="tasks-container">
+                <div class="no-tasks">No tasks yet. Add a child and create some tasks!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let children = [];
+        let tasks = [];
+
+        async function loadChildren() {
+            const response = await fetch('/api/children');
+            children = await response.json();
+            renderChildren();
+            updateChildSelects();
+        }
+
+        async function loadTasks() {
+            const filterChild = document.getElementById('filter-child').value;
+            const url = filterChild ? `/api/tasks?child_id=${filterChild}` : '/api/tasks';
+            const response = await fetch(url);
+            tasks = await response.json();
+            renderTasks();
+        }
+
+        function renderChildren() {
+            const container = document.getElementById('children-list');
+            if (children.length === 0) {
+                container.innerHTML = '<span style="color: #666;">No children added yet</span>';
+                return;
+            }
+            container.innerHTML = children.map(child => `
+                <div class="child-tag">
+                    <span>${child.name}</span>
+                    <button class="delete-child" onclick="deleteChild(${child.id})">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function updateChildSelects() {
+            const taskSelect = document.getElementById('task-child');
+            const filterSelect = document.getElementById('filter-child');
+
+            const options = children.map(child =>
+                `<option value="${child.id}">${child.name}</option>`
+            ).join('');
+
+            taskSelect.innerHTML = '<option value="">Select child...</option>' + options;
+            filterSelect.innerHTML = '<option value="">All Children</option>' + options;
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-container');
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="no-tasks">No tasks found.</div>';
+                return;
+            }
+
+            const filterChild = document.getElementById('filter-child').value;
+
+            if (filterChild) {
+                // Single child view - group by frequency
+                const grouped = {
+                    daily: tasks.filter(t => t.frequency === 'daily'),
+                    weekly: tasks.filter(t => t.frequency === 'weekly'),
+                    monthly: tasks.filter(t => t.frequency === 'monthly'),
+                    'one-time': tasks.filter(t => t.frequency === 'one-time')
+                };
+
+                container.innerHTML = Object.entries(grouped)
+                    .filter(([_, tasks]) => tasks.length > 0)
+                    .map(([frequency, freqTasks]) => `
+                        <div class="task-group">
+                            <h3>${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Tasks</h3>
+                            ${freqTasks.map(task => renderTask(task, false)).join('')}
+                        </div>
+                    `).join('');
+            } else {
+                // All children view - group by child
+                const grouped = {};
+                tasks.forEach(task => {
+                    if (!grouped[task.child_name]) {
+                        grouped[task.child_name] = [];
+                    }
+                    grouped[task.child_name].push(task);
+                });
+
+                container.innerHTML = Object.entries(grouped).map(([childName, childTasks]) => `
+                    <div class="task-group">
+                        <h3>${childName}</h3>
+                        ${childTasks.map(task => renderTask(task, true)).join('')}
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderTask(task, showChild) {
+            return `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <input type="checkbox" class="task-checkbox"
+                           ${task.completed ? 'checked' : ''}
+                           onchange="toggleTask(${task.id})">
+                    <div class="task-info">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
+                            ${showChild ? `<span>Child: ${task.child_name}</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="delete-task" onclick="deleteTask(${task.id})">&times;</button>
+                </div>
+            `;
+        }
+
+        async function addChild() {
+            const input = document.getElementById('child-name');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const response = await fetch('/api/children', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            if (response.ok) {
+                input.value = '';
+                loadChildren();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        }
+
+        async function deleteChild(id) {
+            if (!confirm('Delete this child and all their tasks?')) return;
+            await fetch(`/api/children/${id}`, { method: 'DELETE' });
+            loadChildren();
+            loadTasks();
+        }
+
+        async function addTask() {
+            const title = document.getElementById('task-name').value.trim();
+            const frequency = document.getElementById('task-frequency').value;
+            const child_id = document.getElementById('task-child').value;
+
+            if (!title || !child_id) {
+                alert('Please enter a task and select a child');
+                return;
+            }
+
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, frequency, child_id })
+            });
+
+            if (response.ok) {
+                document.getElementById('task-name').value = '';
+                loadTasks();
+            }
+        }
+
+        async function toggleTask(id) {
+            await fetch(`/api/tasks/${id}/toggle`, { method: 'PATCH' });
+            loadTasks();
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Delete this task?')) return;
+            await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            loadTasks();
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('child-name').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addChild();
+        });
+
+        document.getElementById('task-name').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Initial load
+        loadChildren();
+        loadTasks();
+    </script>
+</body>
+</html>
