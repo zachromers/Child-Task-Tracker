@@ -23,9 +23,9 @@ async function initDatabase() {
         db = new SQL.Database();
     }
 
-    // Create tables
+    // Create tables (using new naming: categories instead of children)
     db.run(`
-        CREATE TABLE IF NOT EXISTS children (
+        CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -37,11 +37,11 @@ async function initDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             frequency TEXT NOT NULL CHECK(frequency IN ('daily', 'weekly', 'monthly', 'one-time')),
-            child_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
             completed INTEGER DEFAULT 0,
             last_completed DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE CASCADE
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
         )
     `);
 
@@ -79,55 +79,55 @@ function runQuery(sql, params = []) {
 
 // API Routes
 
-// Get all children
-app.get('/api/children', (req, res) => {
-    const children = queryAll('SELECT * FROM children ORDER BY name');
-    res.json(children);
+// Get all categories
+app.get('/api/categories', (req, res) => {
+    const categories = queryAll('SELECT * FROM categories ORDER BY name');
+    res.json(categories);
 });
 
-// Add a new child
-app.post('/api/children', (req, res) => {
+// Add a new category
+app.post('/api/categories', (req, res) => {
     const { name } = req.body;
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
     }
     try {
-        const result = runQuery('INSERT INTO children (name) VALUES (?)', [name]);
+        const result = runQuery('INSERT INTO categories (name) VALUES (?)', [name]);
         res.json({ id: result.lastInsertRowid, name });
     } catch (err) {
         if (err.message.includes('UNIQUE constraint')) {
-            return res.status(400).json({ error: 'Child name already exists' });
+            return res.status(400).json({ error: 'Category name already exists' });
         }
         res.status(500).json({ error: err.message });
     }
 });
 
-// Delete a child
-app.delete('/api/children/:id', (req, res) => {
+// Delete a category
+app.delete('/api/categories/:id', (req, res) => {
     const { id } = req.params;
-    runQuery('DELETE FROM tasks WHERE child_id = ?', [id]);
-    runQuery('DELETE FROM children WHERE id = ?', [id]);
+    runQuery('DELETE FROM tasks WHERE category_id = ?', [id]);
+    runQuery('DELETE FROM categories WHERE id = ?', [id]);
     res.json({ success: true });
 });
 
-// Get all tasks (optionally filtered by child)
+// Get all tasks (optionally filtered by category)
 app.get('/api/tasks', (req, res) => {
-    const { child_id } = req.query;
+    const { category_id } = req.query;
     let tasks;
-    if (child_id) {
+    if (category_id) {
         tasks = queryAll(`
-            SELECT tasks.*, children.name as child_name
+            SELECT tasks.*, categories.name as category_name
             FROM tasks
-            JOIN children ON tasks.child_id = children.id
-            WHERE child_id = ?
+            JOIN categories ON tasks.category_id = categories.id
+            WHERE category_id = ?
             ORDER BY tasks.created_at DESC
-        `, [child_id]);
+        `, [category_id]);
     } else {
         tasks = queryAll(`
-            SELECT tasks.*, children.name as child_name
+            SELECT tasks.*, categories.name as category_name
             FROM tasks
-            JOIN children ON tasks.child_id = children.id
-            ORDER BY children.name, tasks.created_at DESC
+            JOIN categories ON tasks.category_id = categories.id
+            ORDER BY categories.name, tasks.created_at DESC
         `);
     }
 
@@ -163,16 +163,16 @@ app.get('/api/tasks', (req, res) => {
 
 // Add a new task
 app.post('/api/tasks', (req, res) => {
-    const { title, frequency, child_id } = req.body;
-    if (!title || !frequency || !child_id) {
-        return res.status(400).json({ error: 'Title, frequency, and child_id are required' });
+    const { title, frequency, category_id } = req.body;
+    if (!title || !frequency || !category_id) {
+        return res.status(400).json({ error: 'Title, frequency, and category_id are required' });
     }
     try {
-        const result = runQuery('INSERT INTO tasks (title, frequency, child_id) VALUES (?, ?, ?)', [title, frequency, child_id]);
+        const result = runQuery('INSERT INTO tasks (title, frequency, category_id) VALUES (?, ?, ?)', [title, frequency, category_id]);
         const task = queryOne(`
-            SELECT tasks.*, children.name as child_name
+            SELECT tasks.*, categories.name as category_name
             FROM tasks
-            JOIN children ON tasks.child_id = children.id
+            JOIN categories ON tasks.category_id = categories.id
             WHERE tasks.id = ?
         `, [result.lastInsertRowid]);
         res.json(task);

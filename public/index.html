@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Child Task Tracker</title>
+    <title>Zach's Task Tracker</title>
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg">
     <style>
         * {
             margin: 0;
@@ -110,14 +111,14 @@
             color: #aaa;
         }
 
-        .children-list {
+        .categories-list {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin-top: 10px;
         }
 
-        .child-tag {
+        .category-tag {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -127,7 +128,7 @@
             font-size: 14px;
         }
 
-        .child-tag .delete-child {
+        .category-tag .delete-category {
             background: none;
             border: none;
             color: #e94560;
@@ -203,10 +204,10 @@
             text-transform: uppercase;
         }
 
-        .frequency-daily { background-color: #4caf50; }
-        .frequency-weekly { background-color: #2196f3; }
-        .frequency-monthly { background-color: #ff9800; }
-        .frequency-one-time { background-color: #9c27b0; }
+        .frequency-daily { background-color: #4caf50; color: #000; }
+        .frequency-weekly { background-color: #2196f3; color: #000; }
+        .frequency-monthly { background-color: #ff9800; color: #000; }
+        .frequency-one-time { background-color: #9c27b0; color: #fff; }
 
         .delete-task {
             background: none;
@@ -227,98 +228,307 @@
             flex: 1;
             min-width: 200px;
         }
+
+        .category-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+
+        .category-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #16213e;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .category-checkbox-label:hover {
+            background-color: #1a2a4e;
+        }
+
+        .category-checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: #e94560;
+            cursor: pointer;
+        }
+
+        .select-all-container {
+            width: 100%;
+            margin-bottom: 5px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #16213e;
+        }
+
+        /* Navigation Menu */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background-color: #0f3460;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: #1a4a7a;
+        }
+
+        .nav-btn.active {
+            background-color: #e94560;
+        }
+
+        .header h1 {
+            margin: 0;
+            text-align: center;
+            flex: 1;
+        }
+
+        .header-spacer {
+            width: 180px;
+        }
+
+        /* View containers */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* Calendar view styles */
+        .calendar-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+        }
+
+        .view-toggle-btn {
+            padding: 8px 16px;
+            background-color: #0f3460;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .view-toggle-btn.active {
+            background-color: #e94560;
+        }
+
+        .calendar-date {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .calendar-section {
+            margin-bottom: 25px;
+        }
+
+        .calendar-section h3 {
+            color: #e94560;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-count {
+            background-color: #0f3460;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Child Task Tracker</h1>
-
-        <!-- Add Child Section -->
-        <div class="section">
-            <h2>Manage Children</h2>
-            <div class="form-row">
-                <input type="text" id="child-name" placeholder="Child's name">
-                <button class="btn-primary" onclick="addChild()">Add Child</button>
+        <!-- Header with Navigation -->
+        <div class="header">
+            <div class="nav-menu">
+                <button class="nav-btn active" onclick="switchView('manage')">Manage</button>
+                <button class="nav-btn" onclick="switchView('calendar')">Calendar</button>
             </div>
-            <div class="children-list" id="children-list"></div>
+            <h1>Zach's Task Tracker</h1>
+            <div class="header-spacer"></div>
         </div>
 
-        <!-- Add Task Section -->
-        <div class="section">
-            <h2>Add New Task</h2>
-            <div class="form-row">
-                <input type="text" id="task-name" placeholder="Task description">
-                <select id="task-frequency">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="one-time">One-time</option>
-                </select>
-                <select id="task-child">
-                    <option value="">Select child...</option>
-                </select>
-                <button class="btn-primary" onclick="addTask()">Add Task</button>
+        <!-- Manage View -->
+        <div id="manage-view" class="view active">
+            <!-- Add Category Section -->
+            <div class="section">
+                <h2>Manage Categories</h2>
+                <div class="form-row">
+                    <input type="text" id="category-name" placeholder="Category name (e.g., Kids, Household, Office)">
+                    <button class="btn-primary" onclick="addCategory()">Add Category</button>
+                </div>
+                <div class="categories-list" id="categories-list"></div>
+            </div>
+
+            <!-- Add Task Section -->
+            <div class="section">
+                <h2>Add New Task</h2>
+                <div class="form-row">
+                    <input type="text" id="task-name" placeholder="Task description">
+                    <select id="task-frequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="one-time">One-time</option>
+                    </select>
+                    <button class="btn-primary" onclick="addTask()">Add Task</button>
+                </div>
+                <div class="category-checkboxes" id="category-checkboxes">
+                    <span style="color: #666;">Add categories first to assign tasks</span>
+                </div>
+            </div>
+
+            <!-- Filter & Tasks Section -->
+            <div class="section">
+                <h2>Tasks</h2>
+                <div class="filter-section">
+                    <label>Filter by category:</label>
+                    <select id="filter-category" onchange="loadTasks()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="tasks-container" id="tasks-container">
+                    <div class="no-tasks">No tasks yet. Add a category and create some tasks!</div>
+                </div>
             </div>
         </div>
 
-        <!-- Filter & Tasks Section -->
-        <div class="section">
-            <h2>Tasks</h2>
-            <div class="filter-section">
-                <label>Filter by child:</label>
-                <select id="filter-child" onchange="loadTasks()">
-                    <option value="">All Children</option>
-                </select>
-            </div>
-            <div class="tasks-container" id="tasks-container">
-                <div class="no-tasks">No tasks yet. Add a child and create some tasks!</div>
+        <!-- Calendar View -->
+        <div id="calendar-view" class="view">
+            <div class="section">
+                <h2>Calendar View</h2>
+                <div class="calendar-controls">
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn active" onclick="setCalendarView('today')">Today</button>
+                        <button class="view-toggle-btn" onclick="setCalendarView('week')">This Week</button>
+                    </div>
+                    <div class="filter-section">
+                        <label>Filter by category:</label>
+                        <select id="calendar-filter-category" onchange="renderCalendar()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="calendar-date" id="calendar-date"></div>
+                </div>
+                <div id="calendar-container">
+                    <div class="no-tasks">No tasks due.</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        let children = [];
+        let categories = [];
         let tasks = [];
+        let calendarTasks = [];
+        let currentCalendarView = 'today';
 
-        async function loadChildren() {
-            const response = await fetch('/api/children');
-            children = await response.json();
-            renderChildren();
-            updateChildSelects();
+        async function loadCategories() {
+            const response = await fetch('/api/categories');
+            categories = await response.json();
+            renderCategories();
+            updateCategorySelects();
         }
 
         async function loadTasks() {
-            const filterChild = document.getElementById('filter-child').value;
-            const url = filterChild ? `/api/tasks?child_id=${filterChild}` : '/api/tasks';
+            const filterCategory = document.getElementById('filter-category').value;
+            const url = filterCategory ? `/api/tasks?category_id=${filterCategory}` : '/api/tasks';
             const response = await fetch(url);
             tasks = await response.json();
             renderTasks();
         }
 
-        function renderChildren() {
-            const container = document.getElementById('children-list');
-            if (children.length === 0) {
-                container.innerHTML = '<span style="color: #666;">No children added yet</span>';
+        function renderCategories() {
+            const container = document.getElementById('categories-list');
+            if (categories.length === 0) {
+                container.innerHTML = '<span style="color: #666;">No categories added yet</span>';
                 return;
             }
-            container.innerHTML = children.map(child => `
-                <div class="child-tag">
-                    <span>${child.name}</span>
-                    <button class="delete-child" onclick="deleteChild(${child.id})">&times;</button>
+            container.innerHTML = categories.map(category => `
+                <div class="category-tag">
+                    <span>${category.name}</span>
+                    <button class="delete-category" onclick="deleteCategory(${category.id})">&times;</button>
                 </div>
             `).join('');
         }
 
-        function updateChildSelects() {
-            const taskSelect = document.getElementById('task-child');
-            const filterSelect = document.getElementById('filter-child');
+        function updateCategorySelects() {
+            const checkboxContainer = document.getElementById('category-checkboxes');
+            const filterSelect = document.getElementById('filter-category');
+            const calendarFilterSelect = document.getElementById('calendar-filter-category');
 
-            const options = children.map(child =>
-                `<option value="${child.id}">${child.name}</option>`
+            const filterOptions = categories.map(category =>
+                `<option value="${category.id}">${category.name}</option>`
             ).join('');
 
-            taskSelect.innerHTML = '<option value="">Select child...</option>' + options;
-            filterSelect.innerHTML = '<option value="">All Children</option>' + options;
+            filterSelect.innerHTML = '<option value="">All Categories</option>' + filterOptions;
+            calendarFilterSelect.innerHTML = '<option value="">All Categories</option>' + filterOptions;
+
+            if (categories.length === 0) {
+                checkboxContainer.innerHTML = '<span style="color: #666;">Add categories first to assign tasks</span>';
+                return;
+            }
+
+            const checkboxes = categories.map(category =>
+                `<label class="category-checkbox-label">
+                    <input type="checkbox" name="task-categories" value="${category.id}">
+                    ${category.name}
+                </label>`
+            ).join('');
+
+            checkboxContainer.innerHTML = `
+                <div class="select-all-container">
+                    <label class="category-checkbox-label">
+                        <input type="checkbox" id="select-all-categories" onchange="toggleSelectAll(this)">
+                        Select All
+                    </label>
+                </div>
+                ${checkboxes}
+            `;
+        }
+
+        function toggleSelectAll(selectAllCheckbox) {
+            const checkboxes = document.querySelectorAll('input[name="task-categories"]');
+            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
         }
 
         function renderTasks() {
@@ -329,10 +539,10 @@
                 return;
             }
 
-            const filterChild = document.getElementById('filter-child').value;
+            const filterCategory = document.getElementById('filter-category').value;
 
-            if (filterChild) {
-                // Single child view - group by frequency
+            if (filterCategory) {
+                // Single category view - group by frequency
                 const grouped = {
                     daily: tasks.filter(t => t.frequency === 'daily'),
                     weekly: tasks.filter(t => t.frequency === 'weekly'),
@@ -349,25 +559,25 @@
                         </div>
                     `).join('');
             } else {
-                // All children view - group by child
+                // All categories view - group by category
                 const grouped = {};
                 tasks.forEach(task => {
-                    if (!grouped[task.child_name]) {
-                        grouped[task.child_name] = [];
+                    if (!grouped[task.category_name]) {
+                        grouped[task.category_name] = [];
                     }
-                    grouped[task.child_name].push(task);
+                    grouped[task.category_name].push(task);
                 });
 
-                container.innerHTML = Object.entries(grouped).map(([childName, childTasks]) => `
+                container.innerHTML = Object.entries(grouped).map(([categoryName, categoryTasks]) => `
                     <div class="task-group">
-                        <h3>${childName}</h3>
-                        ${childTasks.map(task => renderTask(task, true)).join('')}
+                        <h3>${categoryName}</h3>
+                        ${categoryTasks.map(task => renderTask(task, true)).join('')}
                     </div>
                 `).join('');
             }
         }
 
-        function renderTask(task, showChild) {
+        function renderTask(task, showCategory) {
             return `
                 <div class="task-item ${task.completed ? 'completed' : ''}">
                     <input type="checkbox" class="task-checkbox"
@@ -377,7 +587,7 @@
                         <div class="task-title">${task.title}</div>
                         <div class="task-meta">
                             <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
-                            ${showChild ? `<span>Child: ${task.child_name}</span>` : ''}
+                            ${showCategory ? `<span>Category: ${task.category_name}</span>` : ''}
                         </div>
                     </div>
                     <button class="delete-task" onclick="deleteTask(${task.id})">&times;</button>
@@ -385,12 +595,12 @@
             `;
         }
 
-        async function addChild() {
-            const input = document.getElementById('child-name');
+        async function addCategory() {
+            const input = document.getElementById('category-name');
             const name = input.value.trim();
             if (!name) return;
 
-            const response = await fetch('/api/children', {
+            const response = await fetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
@@ -398,56 +608,201 @@
 
             if (response.ok) {
                 input.value = '';
-                loadChildren();
+                loadCategories();
             } else {
                 const error = await response.json();
                 alert(error.error);
             }
         }
 
-        async function deleteChild(id) {
-            if (!confirm('Delete this child and all their tasks?')) return;
-            await fetch(`/api/children/${id}`, { method: 'DELETE' });
-            loadChildren();
+        async function deleteCategory(id) {
+            if (!confirm('Delete this category and all its tasks?')) return;
+            await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            loadCategories();
             loadTasks();
         }
 
         async function addTask() {
             const title = document.getElementById('task-name').value.trim();
             const frequency = document.getElementById('task-frequency').value;
-            const child_id = document.getElementById('task-child').value;
+            const selectedCategories = Array.from(document.querySelectorAll('input[name="task-categories"]:checked'))
+                .map(cb => cb.value);
 
-            if (!title || !child_id) {
-                alert('Please enter a task and select a child');
+            if (!title || selectedCategories.length === 0) {
+                alert('Please enter a task and select at least one category');
                 return;
             }
 
-            const response = await fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, frequency, child_id })
-            });
+            // Create task for each selected category
+            const promises = selectedCategories.map(category_id =>
+                fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, frequency, category_id })
+                })
+            );
 
-            if (response.ok) {
-                document.getElementById('task-name').value = '';
-                loadTasks();
-            }
+            await Promise.all(promises);
+            document.getElementById('task-name').value = '';
+            // Uncheck all category checkboxes
+            document.querySelectorAll('input[name="task-categories"]').forEach(cb => cb.checked = false);
+            const selectAll = document.getElementById('select-all-categories');
+            if (selectAll) selectAll.checked = false;
+            loadTasks();
         }
 
         async function toggleTask(id) {
             await fetch(`/api/tasks/${id}/toggle`, { method: 'PATCH' });
             loadTasks();
+            loadCalendarTasks();
         }
 
         async function deleteTask(id) {
             if (!confirm('Delete this task?')) return;
             await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
             loadTasks();
+            loadCalendarTasks();
+        }
+
+        // View switching
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(viewName + '-view').classList.add('active');
+            event.target.classList.add('active');
+
+            if (viewName === 'calendar') {
+                loadCalendarTasks();
+            }
+        }
+
+        // Calendar view functions
+        function setCalendarView(view) {
+            currentCalendarView = view;
+            document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            renderCalendar();
+        }
+
+        async function loadCalendarTasks() {
+            const response = await fetch('/api/tasks');
+            calendarTasks = await response.json();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar-container');
+            const dateDisplay = document.getElementById('calendar-date');
+            const filterCategory = document.getElementById('calendar-filter-category').value;
+
+            const now = new Date();
+            const today = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Filter by category if selected
+            let filteredTasks = calendarTasks;
+            if (filterCategory) {
+                filteredTasks = calendarTasks.filter(t => t.category_id == filterCategory);
+            }
+
+            if (currentCalendarView === 'today') {
+                dateDisplay.textContent = today;
+
+                // Today: show daily tasks and one-time tasks (not completed)
+                const todayTasks = filteredTasks.filter(t =>
+                    t.frequency === 'daily' || t.frequency === 'one-time'
+                );
+
+                renderCalendarTasks(container, todayTasks, 'Due Today');
+            } else {
+                // This week view
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - now.getDay());
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+
+                dateDisplay.textContent = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+                // This week: show daily, weekly, and one-time tasks
+                const weekTasks = filteredTasks.filter(t =>
+                    t.frequency === 'daily' || t.frequency === 'weekly' || t.frequency === 'one-time'
+                );
+
+                // Group by frequency for week view
+                const daily = weekTasks.filter(t => t.frequency === 'daily');
+                const weekly = weekTasks.filter(t => t.frequency === 'weekly');
+                const oneTime = weekTasks.filter(t => t.frequency === 'one-time');
+
+                let html = '';
+
+                if (daily.length > 0) {
+                    html += renderCalendarSection(daily, 'Daily Tasks (Every Day)', true);
+                }
+                if (weekly.length > 0) {
+                    html += renderCalendarSection(weekly, 'Weekly Tasks', true);
+                }
+                if (oneTime.length > 0) {
+                    html += renderCalendarSection(oneTime, 'One-Time Tasks', true);
+                }
+
+                if (html === '') {
+                    html = '<div class="no-tasks">No tasks due this week.</div>';
+                }
+
+                container.innerHTML = html;
+            }
+        }
+
+        function renderCalendarTasks(container, taskList, title) {
+            if (taskList.length === 0) {
+                container.innerHTML = '<div class="no-tasks">No tasks due.</div>';
+                return;
+            }
+
+            container.innerHTML = renderCalendarSection(taskList, title, true);
+        }
+
+        function renderCalendarSection(taskList, title, showCategory) {
+            // Group by category
+            const grouped = {};
+            taskList.forEach(task => {
+                if (!grouped[task.category_name]) {
+                    grouped[task.category_name] = [];
+                }
+                grouped[task.category_name].push(task);
+            });
+
+            let html = `<div class="calendar-section">
+                <h3>${title} <span class="task-count">${taskList.length} task${taskList.length !== 1 ? 's' : ''}</span></h3>`;
+
+            Object.entries(grouped).forEach(([categoryName, categoryTasks]) => {
+                html += `<div class="task-group" style="margin-bottom: 15px;">
+                    <h4 style="color: #aaa; font-size: 14px; margin-bottom: 8px;">${categoryName}</h4>`;
+                categoryTasks.forEach(task => {
+                    html += `
+                        <div class="task-item ${task.completed ? 'completed' : ''}">
+                            <input type="checkbox" class="task-checkbox"
+                                   ${task.completed ? 'checked' : ''}
+                                   onchange="toggleTask(${task.id})">
+                            <div class="task-info">
+                                <div class="task-title">${task.title}</div>
+                                <div class="task-meta">
+                                    <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            html += '</div>';
+            return html;
         }
 
         // Allow Enter key to submit
-        document.getElementById('child-name').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addChild();
+        document.getElementById('category-name').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addCategory();
         });
 
         document.getElementById('task-name').addEventListener('keypress', (e) => {
@@ -455,7 +810,7 @@
         });
 
         // Initial load
-        loadChildren();
+        loadCategories();
         loadTasks();
     </script>
 </body>
