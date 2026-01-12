@@ -4,10 +4,16 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
+const BASE_PATH = '/tasks';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
+
+// Redirect root to /tasks
+app.get('/', (req, res) => {
+    res.redirect(BASE_PATH);
+});
 
 const DB_PATH = path.join(__dirname, 'tasks.db');
 let db;
@@ -80,13 +86,13 @@ function runQuery(sql, params = []) {
 // API Routes
 
 // Get all categories
-app.get('/api/categories', (req, res) => {
+app.get(BASE_PATH + '/api/categories', (req, res) => {
     const categories = queryAll('SELECT * FROM categories ORDER BY name');
     res.json(categories);
 });
 
 // Add a new category
-app.post('/api/categories', (req, res) => {
+app.post(BASE_PATH + '/api/categories', (req, res) => {
     const { name } = req.body;
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
@@ -103,7 +109,7 @@ app.post('/api/categories', (req, res) => {
 });
 
 // Delete a category
-app.delete('/api/categories/:id', (req, res) => {
+app.delete(BASE_PATH + '/api/categories/:id', (req, res) => {
     const { id } = req.params;
     runQuery('DELETE FROM tasks WHERE category_id = ?', [id]);
     runQuery('DELETE FROM categories WHERE id = ?', [id]);
@@ -111,7 +117,7 @@ app.delete('/api/categories/:id', (req, res) => {
 });
 
 // Get all tasks (optionally filtered by category)
-app.get('/api/tasks', (req, res) => {
+app.get(BASE_PATH + '/api/tasks', (req, res) => {
     const { category_id } = req.query;
     let tasks;
     if (category_id) {
@@ -162,7 +168,7 @@ app.get('/api/tasks', (req, res) => {
 });
 
 // Add a new task
-app.post('/api/tasks', (req, res) => {
+app.post(BASE_PATH + '/api/tasks', (req, res) => {
     const { title, frequency, category_id } = req.body;
     if (!title || !frequency || !category_id) {
         return res.status(400).json({ error: 'Title, frequency, and category_id are required' });
@@ -182,7 +188,7 @@ app.post('/api/tasks', (req, res) => {
 });
 
 // Toggle task completion
-app.patch('/api/tasks/:id/toggle', (req, res) => {
+app.patch(BASE_PATH + '/api/tasks/:id/toggle', (req, res) => {
     const { id } = req.params;
     const task = queryOne('SELECT * FROM tasks WHERE id = ?', [id]);
     if (!task) {
@@ -195,7 +201,7 @@ app.patch('/api/tasks/:id/toggle', (req, res) => {
 });
 
 // Delete a task
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete(BASE_PATH + '/api/tasks/:id', (req, res) => {
     const { id } = req.params;
     runQuery('DELETE FROM tasks WHERE id = ?', [id]);
     res.json({ success: true });
@@ -204,7 +210,7 @@ app.delete('/api/tasks/:id', (req, res) => {
 // Start server after database initialization
 initDatabase().then(() => {
     app.listen(PORT, () => {
-        console.log(`Server running at http://localhost:${PORT}`);
+        console.log(`Server running at http://localhost:${PORT}${BASE_PATH}`);
     });
 }).catch(err => {
     console.error('Failed to initialize database:', err);

@@ -463,7 +463,7 @@
         let currentCalendarView = 'today';
 
         async function loadCategories() {
-            const response = await fetch('/api/categories');
+            const response = await fetch('/tasks/api/categories');
             categories = await response.json();
             renderCategories();
             updateCategorySelects();
@@ -471,7 +471,7 @@
 
         async function loadTasks() {
             const filterCategory = document.getElementById('filter-category').value;
-            const url = filterCategory ? `/api/tasks?category_id=${filterCategory}` : '/api/tasks';
+            const url = filterCategory ? `/tasks/api/tasks?category_id=${filterCategory}` : '/tasks/api/tasks';
             const response = await fetch(url);
             tasks = await response.json();
             renderTasks();
@@ -600,7 +600,7 @@
             const name = input.value.trim();
             if (!name) return;
 
-            const response = await fetch('/api/categories', {
+            const response = await fetch('/tasks/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
@@ -617,7 +617,7 @@
 
         async function deleteCategory(id) {
             if (!confirm('Delete this category and all its tasks?')) return;
-            await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            await fetch(`/tasks/api/categories/${id}`, { method: 'DELETE' });
             loadCategories();
             loadTasks();
         }
@@ -635,7 +635,7 @@
 
             // Create task for each selected category
             const promises = selectedCategories.map(category_id =>
-                fetch('/api/tasks', {
+                fetch('/tasks/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, frequency, category_id })
@@ -652,14 +652,14 @@
         }
 
         async function toggleTask(id) {
-            await fetch(`/api/tasks/${id}/toggle`, { method: 'PATCH' });
+            await fetch(`/tasks/api/tasks/${id}/toggle`, { method: 'PATCH' });
             loadTasks();
             loadCalendarTasks();
         }
 
         async function deleteTask(id) {
             if (!confirm('Delete this task?')) return;
-            await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            await fetch(`/tasks/api/tasks/${id}`, { method: 'DELETE' });
             loadTasks();
             loadCalendarTasks();
         }
@@ -686,7 +686,7 @@
         }
 
         async function loadCalendarTasks() {
-            const response = await fetch('/api/tasks');
+            const response = await fetch('/tasks/api/tasks');
             calendarTasks = await response.json();
             renderCalendar();
         }
