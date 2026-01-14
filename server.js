@@ -10,6 +10,12 @@ const PORT = 3001;
 const BASE_PATH = '/tasks';
 const COOKIE_NAME = 'task_tracker_user';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000; // 1 year
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Trust proxy for reverse proxy setups (nginx, etc.)
+if (IS_PRODUCTION) {
+    app.set('trust proxy', 1);
+}
 
 app.use(express.json());
 app.use(cookieParser());
@@ -21,7 +27,8 @@ app.use((req, res, next) => {
         res.cookie(COOKIE_NAME, userId, {
             maxAge: COOKIE_MAX_AGE,
             httpOnly: true,
-            sameSite: 'strict'
+            sameSite: 'lax',
+            secure: IS_PRODUCTION
         });
         req.userId = userId;
     } else {
