@@ -273,6 +273,50 @@ app.patch(BASE_PATH + '/api/tasks/:id/reset', (req, res) => {
     res.json({ ...task, completed: 0 });
 });
 
+// Edit a task (only if owned by current user)
+app.patch(BASE_PATH + '/api/tasks/:id', (req, res) => {
+    const { id } = req.params;
+    const { title, frequency, reset_day } = req.body;
+
+    const task = queryOne('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.userId]);
+    if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Build update query dynamically based on provided fields
+    const updates = [];
+    const params = [];
+
+    if (title !== undefined) {
+        updates.push('title = ?');
+        params.push(title);
+    }
+    if (frequency !== undefined) {
+        updates.push('frequency = ?');
+        params.push(frequency);
+    }
+    if (reset_day !== undefined) {
+        updates.push('reset_day = ?');
+        params.push(reset_day);
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    params.push(id, req.userId);
+    runQuery(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`, params);
+
+    const updatedTask = queryOne(`
+        SELECT tasks.*, categories.name as category_name
+        FROM tasks
+        JOIN categories ON tasks.category_id = categories.id
+        WHERE tasks.id = ?
+    `, [id]);
+
+    res.json(updatedTask);
+});
+
 // Delete a task (only if owned by current user)
 app.delete(BASE_PATH + '/api/tasks/:id', (req, res) => {
     const { id } = req.params;

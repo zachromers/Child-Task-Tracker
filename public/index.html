@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zach's Task Tracker</title>
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg">
+    <title>Task Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="/tasks/favicon.svg">
     <style>
         * {
             margin: 0;
@@ -218,6 +218,80 @@
             padding: 5px;
         }
 
+        .edit-task {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+
+        .edit-task:hover {
+            color: #e94560;
+        }
+
+        .task-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Edit Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background-color: #16213e;
+            border-radius: 10px;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        .modal h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+
+        .modal-form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-form-group label {
+            display: block;
+            color: #aaa;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .modal-form-group input,
+        .modal-form-group select {
+            width: 100%;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
         .no-tasks {
             text-align: center;
             color: #666;
@@ -307,7 +381,7 @@
         }
 
         .header-spacer {
-            width: 180px;
+            width: 270px;
         }
 
         /* View containers */
@@ -373,6 +447,230 @@
             font-size: 12px;
             color: #aaa;
         }
+
+        /* Calendar Grid Styles */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            padding: 8px 12px;
+        }
+
+        .calendar-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #e94560;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .calendar-grid-container {
+            margin-top: 15px;
+        }
+
+        /* Month View Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            background-color: #0f3460;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-weekday {
+            background-color: #16213e;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #e94560;
+            font-size: 12px;
+        }
+
+        .calendar-day {
+            background-color: #1a1a2e;
+            min-height: 80px;
+            padding: 5px;
+            position: relative;
+        }
+
+        .calendar-day.other-month {
+            background-color: #12121f;
+            opacity: 0.5;
+        }
+
+        .calendar-day.today {
+            background-color: #1a2a4e;
+            box-shadow: inset 0 0 0 2px #e94560;
+        }
+
+        .calendar-day-number {
+            font-size: 12px;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .calendar-day.today .calendar-day-number {
+            color: #e94560;
+        }
+
+        .calendar-day-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-height: 60px;
+            overflow-y: auto;
+        }
+
+        .calendar-task-dot {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .calendar-task-dot:hover {
+            opacity: 0.8;
+        }
+
+        .calendar-task-dot.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .calendar-task-dot.daily { background-color: rgba(76, 175, 80, 0.3); color: #4caf50; }
+        .calendar-task-dot.weekly { background-color: rgba(33, 150, 243, 0.3); color: #2196f3; }
+        .calendar-task-dot.monthly { background-color: rgba(255, 152, 0, 0.3); color: #ff9800; }
+        .calendar-task-dot.one-time { background-color: rgba(156, 39, 176, 0.3); color: #ce93d8; }
+
+        /* Week View Grid */
+        .calendar-week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-week-day {
+            background-color: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 200px;
+        }
+
+        .calendar-week-day.today {
+            box-shadow: inset 0 0 0 2px #e94560;
+        }
+
+        .calendar-week-day-header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #16213e;
+        }
+
+        .calendar-week-day-name {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .calendar-week-day-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .calendar-week-day.today .calendar-week-day-number {
+            color: #e94560;
+        }
+
+        .calendar-week-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .calendar-week-task {
+            font-size: 12px;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Day View */
+        .calendar-day-view {
+            background-color: #0f3460;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .calendar-day-view-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #16213e;
+        }
+
+        .calendar-day-view-date {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .calendar-day-view-weekday {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .calendar-day-tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .calendar-day-task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background-color: #16213e;
+            border-radius: 6px;
+        }
+
+        .calendar-day-task-item.completed {
+            opacity: 0.6;
+        }
+
+        .calendar-day-task-item.completed .calendar-day-task-title {
+            text-decoration: line-through;
+        }
+
+        .calendar-day-task-title {
+            flex: 1;
+        }
+
+        .more-tasks {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+            padding: 2px;
+        }
     </style>
 </head>
 <body>
@@ -380,25 +678,16 @@
         <!-- Header with Navigation -->
         <div class="header">
             <div class="nav-menu">
-                <button class="nav-btn active" onclick="switchView('manage')">Manage</button>
+                <button class="nav-btn active" onclick="switchView('manage')">Tasks</button>
                 <button class="nav-btn" onclick="switchView('calendar')">Calendar</button>
+                <button class="nav-btn" onclick="switchView('categories')">Categories</button>
             </div>
-            <h1>Zach's Task Tracker</h1>
+            <h1>Task Tracker</h1>
             <div class="header-spacer"></div>
         </div>
 
         <!-- Manage View -->
         <div id="manage-view" class="view active">
-            <!-- Add Category Section -->
-            <div class="section">
-                <h2>Manage Categories</h2>
-                <div class="form-row">
-                    <input type="text" id="category-name" placeholder="Category name (e.g., Kids, Household, Office)">
-                    <button class="btn-primary" onclick="addCategory()">Add Category</button>
-                </div>
-                <div class="categories-list" id="categories-list"></div>
-            </div>
-
             <!-- Add Task Section -->
             <div class="section">
                 <h2>Add New Task</h2>
@@ -474,23 +763,110 @@
         <!-- Calendar View -->
         <div id="calendar-view" class="view">
             <div class="section">
-                <h2>Calendar View</h2>
-                <div class="calendar-controls">
-                    <div class="view-toggle">
-                        <button class="view-toggle-btn active" onclick="setCalendarView('today')">Today</button>
-                        <button class="view-toggle-btn" onclick="setCalendarView('week')">This Week</button>
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button class="btn-secondary" onclick="navigateCalendar(-1)">&larr;</button>
+                        <span class="calendar-title" id="calendar-title">January 2026</span>
+                        <button class="btn-secondary" onclick="navigateCalendar(1)">&rarr;</button>
+                        <button class="btn-secondary" onclick="goToToday()">Today</button>
                     </div>
-                    <div class="filter-section">
-                        <label>Filter by category:</label>
-                        <select id="calendar-filter-category" onchange="renderCalendar()">
-                            <option value="">All Categories</option>
-                        </select>
+                    <div class="calendar-controls">
+                        <div class="view-toggle">
+                            <button class="view-toggle-btn" onclick="setCalendarView('day')">Day</button>
+                            <button class="view-toggle-btn" onclick="setCalendarView('week')">Week</button>
+                            <button class="view-toggle-btn active" onclick="setCalendarView('month')">Month</button>
+                        </div>
+                        <div class="filter-section">
+                            <label>Category:</label>
+                            <select id="calendar-filter-category" onchange="renderCalendar()">
+                                <option value="">All</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="calendar-date" id="calendar-date"></div>
                 </div>
-                <div id="calendar-container">
-                    <div class="no-tasks">No tasks due.</div>
+                <div id="calendar-container" class="calendar-grid-container">
+                    <div class="no-tasks">Loading...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Categories View -->
+        <div id="categories-view" class="view">
+            <div class="section">
+                <h2>Manage Categories</h2>
+                <p style="color: #888; margin-bottom: 15px;">Categories help you organize your tasks. Create categories like "Work", "Home", "Kids", etc.</p>
+                <div class="form-row">
+                    <input type="text" id="category-name" placeholder="Category name (e.g., Kids, Household, Office)">
+                    <button class="btn-primary" onclick="addCategory()">Add Category</button>
+                </div>
+                <div class="categories-list" id="categories-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="edit-modal" class="modal-overlay" onclick="closeEditModalOnOverlay(event)">
+        <div class="modal">
+            <h2>Edit Task</h2>
+            <input type="hidden" id="edit-task-id">
+            <div class="modal-form-group">
+                <label for="edit-task-name">Task Name</label>
+                <input type="text" id="edit-task-name" placeholder="Task description">
+            </div>
+            <div class="modal-form-group">
+                <label for="edit-task-frequency">Frequency</label>
+                <select id="edit-task-frequency" onchange="onEditFrequencyChange()">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="one-time">One-time</option>
+                </select>
+            </div>
+            <div class="modal-form-group" id="edit-reset-day-group" style="display:none">
+                <label for="edit-weekly-reset-day">Reset Day</label>
+                <select id="edit-weekly-reset-day" style="display:none">
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                </select>
+                <select id="edit-monthly-reset-day" style="display:none">
+                    <option value="1">1st</option>
+                    <option value="2">2nd</option>
+                    <option value="3">3rd</option>
+                    <option value="4">4th</option>
+                    <option value="5">5th</option>
+                    <option value="6">6th</option>
+                    <option value="7">7th</option>
+                    <option value="8">8th</option>
+                    <option value="9">9th</option>
+                    <option value="10">10th</option>
+                    <option value="11">11th</option>
+                    <option value="12">12th</option>
+                    <option value="13">13th</option>
+                    <option value="14">14th</option>
+                    <option value="15">15th</option>
+                    <option value="16">16th</option>
+                    <option value="17">17th</option>
+                    <option value="18">18th</option>
+                    <option value="19">19th</option>
+                    <option value="20">20th</option>
+                    <option value="21">21st</option>
+                    <option value="22">22nd</option>
+                    <option value="23">23rd</option>
+                    <option value="24">24th</option>
+                    <option value="25">25th</option>
+                    <option value="26">26th</option>
+                    <option value="27">27th</option>
+                    <option value="28">28th</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveTaskEdit()">Save</button>
             </div>
         </div>
     </div>
@@ -499,7 +875,8 @@
         let categories = [];
         let tasks = [];
         let calendarTasks = [];
-        let currentCalendarView = 'today';
+        let currentCalendarView = 'month';
+        let calendarDate = new Date();
 
         function onFrequencyChange() {
             const frequency = document.getElementById('task-frequency').value;
@@ -706,7 +1083,10 @@
                             ${showCategory ? `<span>Category: ${task.category_name}</span>` : ''}
                         </div>
                     </div>
-                    <button class="delete-task" onclick="deleteTask(${task.id})">&times;</button>
+                    <div class="task-actions">
+                        <button class="edit-task" onclick="openEditModal(${task.id})" title="Edit task">&#9998;</button>
+                        <button class="delete-task" onclick="deleteTask(${task.id})" title="Delete task">&times;</button>
+                    </div>
                 </div>
             `;
         }
@@ -791,6 +1171,89 @@
             loadCalendarTasks();
         }
 
+        // Edit task modal functions
+        function openEditModal(taskId) {
+            const task = tasks.find(t => t.id === taskId) || calendarTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('edit-task-id').value = task.id;
+            document.getElementById('edit-task-name').value = task.title;
+            document.getElementById('edit-task-frequency').value = task.frequency;
+
+            // Set reset day values
+            if (task.reset_day !== null) {
+                document.getElementById('edit-weekly-reset-day').value = task.reset_day;
+                document.getElementById('edit-monthly-reset-day').value = task.reset_day;
+            }
+
+            onEditFrequencyChange();
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+
+        function closeEditModalOnOverlay(event) {
+            if (event.target.id === 'edit-modal') {
+                closeEditModal();
+            }
+        }
+
+        function onEditFrequencyChange() {
+            const frequency = document.getElementById('edit-task-frequency').value;
+            const resetDayGroup = document.getElementById('edit-reset-day-group');
+            const weeklySelect = document.getElementById('edit-weekly-reset-day');
+            const monthlySelect = document.getElementById('edit-monthly-reset-day');
+
+            if (frequency === 'weekly') {
+                resetDayGroup.style.display = 'block';
+                weeklySelect.style.display = 'block';
+                monthlySelect.style.display = 'none';
+            } else if (frequency === 'monthly') {
+                resetDayGroup.style.display = 'block';
+                weeklySelect.style.display = 'none';
+                monthlySelect.style.display = 'block';
+            } else {
+                resetDayGroup.style.display = 'none';
+                weeklySelect.style.display = 'none';
+                monthlySelect.style.display = 'none';
+            }
+        }
+
+        async function saveTaskEdit() {
+            const taskId = document.getElementById('edit-task-id').value;
+            const title = document.getElementById('edit-task-name').value.trim();
+            const frequency = document.getElementById('edit-task-frequency').value;
+
+            if (!title) {
+                alert('Task name is required');
+                return;
+            }
+
+            let reset_day = null;
+            if (frequency === 'weekly') {
+                reset_day = parseInt(document.getElementById('edit-weekly-reset-day').value);
+            } else if (frequency === 'monthly') {
+                reset_day = parseInt(document.getElementById('edit-monthly-reset-day').value);
+            }
+
+            const response = await fetch(`/tasks/api/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, frequency, reset_day })
+            });
+
+            if (response.ok) {
+                closeEditModal();
+                loadTasks();
+                loadCalendarTasks();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Failed to update task');
+            }
+        }
+
         // View switching
         function switchView(viewName) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -801,6 +1264,8 @@
 
             if (viewName === 'calendar') {
                 loadCalendarTasks();
+            } else if (viewName === 'categories') {
+                loadCategories();
             }
         }
 
@@ -812,6 +1277,22 @@
             renderCalendar();
         }
 
+        function navigateCalendar(direction) {
+            if (currentCalendarView === 'day') {
+                calendarDate.setDate(calendarDate.getDate() + direction);
+            } else if (currentCalendarView === 'week') {
+                calendarDate.setDate(calendarDate.getDate() + (direction * 7));
+            } else {
+                calendarDate.setMonth(calendarDate.getMonth() + direction);
+            }
+            renderCalendar();
+        }
+
+        function goToToday() {
+            calendarDate = new Date();
+            renderCalendar();
+        }
+
         async function loadCalendarTasks() {
             const response = await fetch('/tasks/api/tasks');
             calendarTasks = await response.json();
@@ -819,112 +1300,213 @@
             renderCalendar();
         }
 
+        function getTasksForDate(date, filteredTasks) {
+            const dayOfWeek = date.getDay();
+            const dayOfMonth = date.getDate();
+
+            return filteredTasks.filter(task => {
+                if (task.frequency === 'daily') return true;
+                if (task.frequency === 'weekly') {
+                    const resetDay = task.reset_day ?? 0;
+                    return dayOfWeek === resetDay;
+                }
+                if (task.frequency === 'monthly') {
+                    const resetDay = task.reset_day ?? 1;
+                    return dayOfMonth === resetDay;
+                }
+                if (task.frequency === 'one-time') return true;
+                return false;
+            });
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
         function renderCalendar() {
             const container = document.getElementById('calendar-container');
-            const dateDisplay = document.getElementById('calendar-date');
+            const titleDisplay = document.getElementById('calendar-title');
             const filterCategory = document.getElementById('calendar-filter-category').value;
 
-            const now = new Date();
-            const today = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-            // Filter by category if selected
             let filteredTasks = calendarTasks;
             if (filterCategory) {
                 filteredTasks = calendarTasks.filter(t => t.category_id == filterCategory);
             }
 
-            if (currentCalendarView === 'today') {
-                dateDisplay.textContent = today;
-
-                // Today: show daily tasks and one-time tasks (not completed)
-                const todayTasks = filteredTasks.filter(t =>
-                    t.frequency === 'daily' || t.frequency === 'one-time'
-                );
-
-                renderCalendarTasks(container, todayTasks, 'Due Today');
+            if (currentCalendarView === 'day') {
+                renderDayView(container, titleDisplay, filteredTasks);
+            } else if (currentCalendarView === 'week') {
+                renderWeekView(container, titleDisplay, filteredTasks);
             } else {
-                // This week view
-                const weekStart = new Date(now);
-                weekStart.setDate(now.getDate() - now.getDay());
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
-
-                dateDisplay.textContent = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-
-                // This week: show daily, weekly, and one-time tasks
-                const weekTasks = filteredTasks.filter(t =>
-                    t.frequency === 'daily' || t.frequency === 'weekly' || t.frequency === 'one-time'
-                );
-
-                // Group by frequency for week view
-                const daily = weekTasks.filter(t => t.frequency === 'daily');
-                const weekly = weekTasks.filter(t => t.frequency === 'weekly');
-                const oneTime = weekTasks.filter(t => t.frequency === 'one-time');
-
-                let html = '';
-
-                if (daily.length > 0) {
-                    html += renderCalendarSection(daily, 'Daily Tasks (Every Day)', true);
-                }
-                if (weekly.length > 0) {
-                    html += renderCalendarSection(weekly, 'Weekly Tasks', true);
-                }
-                if (oneTime.length > 0) {
-                    html += renderCalendarSection(oneTime, 'One-Time Tasks', true);
-                }
-
-                if (html === '') {
-                    html = '<div class="no-tasks">No tasks due this week.</div>';
-                }
-
-                container.innerHTML = html;
+                renderMonthView(container, titleDisplay, filteredTasks);
             }
         }
 
-        function renderCalendarTasks(container, taskList, title) {
-            if (taskList.length === 0) {
-                container.innerHTML = '<div class="no-tasks">No tasks due.</div>';
-                return;
-            }
+        function renderDayView(container, titleDisplay, filteredTasks) {
+            const today = new Date();
+            const viewDate = new Date(calendarDate);
 
-            container.innerHTML = renderCalendarSection(taskList, title, true);
-        }
-
-        function renderCalendarSection(taskList, title, showCategory) {
-            // Group by category
-            const grouped = {};
-            taskList.forEach(task => {
-                if (!grouped[task.category_name]) {
-                    grouped[task.category_name] = [];
-                }
-                grouped[task.category_name].push(task);
+            titleDisplay.textContent = viewDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
 
-            let html = `<div class="calendar-section">
-                <h3>${title} <span class="task-count">${taskList.length} task${taskList.length !== 1 ? 's' : ''}</span></h3>`;
+            const dayTasks = getTasksForDate(viewDate, filteredTasks);
+            const isToday = isSameDay(viewDate, today);
 
-            Object.entries(grouped).forEach(([categoryName, categoryTasks]) => {
-                html += `<div class="task-group" style="margin-bottom: 15px;">
-                    <h4 style="color: #aaa; font-size: 14px; margin-bottom: 8px;">${categoryName}</h4>`;
-                categoryTasks.forEach(task => {
+            let html = `<div class="calendar-day-view">
+                <div class="calendar-day-view-header">
+                    <div class="calendar-day-view-date">${viewDate.getDate()}</div>
+                    <div class="calendar-day-view-weekday">${viewDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', year: 'numeric' })}</div>
+                    ${isToday ? '<span class="frequency-badge frequency-daily" style="margin-top: 10px;">Today</span>' : ''}
+                </div>
+                <div class="calendar-day-tasks-list">`;
+
+            if (dayTasks.length === 0) {
+                html += '<div class="no-tasks">No tasks scheduled for this day.</div>';
+            } else {
+                dayTasks.forEach(task => {
                     html += `
-                        <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <div class="calendar-day-task-item ${task.completed ? 'completed' : ''}">
                             <input type="checkbox" class="task-checkbox"
                                    ${task.completed ? 'checked' : ''}
                                    onchange="toggleTask(${task.id})">
-                            <div class="task-info">
-                                <div class="task-title">${task.title}</div>
-                                <div class="task-meta">
-                                    <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
-                                </div>
-                            </div>
+                            <div class="calendar-day-task-title">${task.title}</div>
+                            <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
+                            <span style="color: #888; font-size: 12px;">${task.category_name}</span>
                         </div>
                     `;
                 });
-                html += '</div>';
-            });
+            }
+
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        function renderWeekView(container, titleDisplay, filteredTasks) {
+            const today = new Date();
+            const weekStart = new Date(calendarDate);
+            weekStart.setDate(calendarDate.getDate() - calendarDate.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+
+            titleDisplay.textContent = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let html = '<div class="calendar-week-grid">';
+
+            for (let i = 0; i < 7; i++) {
+                const currentDay = new Date(weekStart);
+                currentDay.setDate(weekStart.getDate() + i);
+                const isToday = isSameDay(currentDay, today);
+                const dayTasks = getTasksForDate(currentDay, filteredTasks);
+
+                html += `
+                    <div class="calendar-week-day ${isToday ? 'today' : ''}">
+                        <div class="calendar-week-day-header">
+                            <div class="calendar-week-day-name">${dayNames[i]}</div>
+                            <div class="calendar-week-day-number">${currentDay.getDate()}</div>
+                        </div>
+                        <div class="calendar-week-tasks">`;
+
+                dayTasks.forEach(task => {
+                    html += `
+                        <div class="calendar-week-task calendar-task-dot ${task.frequency} ${task.completed ? 'completed' : ''}"
+                             onclick="toggleTask(${task.id})" title="${task.title} (${task.category_name})">
+                            ${task.title}
+                        </div>
+                    `;
+                });
+
+                if (dayTasks.length === 0) {
+                    html += '<div style="color: #666; font-size: 11px; text-align: center;">No tasks</div>';
+                }
+
+                html += '</div></div>';
+            }
 
             html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderMonthView(container, titleDisplay, filteredTasks) {
+            const today = new Date();
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+
+            titleDisplay.textContent = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startPadding = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let html = '<div class="calendar-grid">';
+
+            // Weekday headers
+            dayNames.forEach(day => {
+                html += `<div class="calendar-weekday">${day}</div>`;
+            });
+
+            // Previous month padding
+            const prevMonth = new Date(year, month, 0);
+            const prevMonthDays = prevMonth.getDate();
+            for (let i = startPadding - 1; i >= 0; i--) {
+                const day = prevMonthDays - i;
+                const date = new Date(year, month - 1, day);
+                const dayTasks = getTasksForDate(date, filteredTasks);
+                html += renderMonthDay(date, dayTasks, true, today);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayTasks = getTasksForDate(date, filteredTasks);
+                html += renderMonthDay(date, dayTasks, false, today);
+            }
+
+            // Next month padding
+            const totalCells = startPadding + daysInMonth;
+            const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (let i = 1; i <= remaining; i++) {
+                const date = new Date(year, month + 1, i);
+                const dayTasks = getTasksForDate(date, filteredTasks);
+                html += renderMonthDay(date, dayTasks, true, today);
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderMonthDay(date, tasks, isOtherMonth, today) {
+            const isToday = isSameDay(date, today);
+            let classes = 'calendar-day';
+            if (isOtherMonth) classes += ' other-month';
+            if (isToday) classes += ' today';
+
+            let html = `<div class="${classes}">
+                <div class="calendar-day-number">${date.getDate()}</div>
+                <div class="calendar-day-tasks">`;
+
+            const maxVisible = 3;
+            const visibleTasks = tasks.slice(0, maxVisible);
+            const remaining = tasks.length - maxVisible;
+
+            visibleTasks.forEach(task => {
+                html += `<div class="calendar-task-dot ${task.frequency} ${task.completed ? 'completed' : ''}"
+                             onclick="toggleTask(${task.id})" title="${task.title}">${task.title}</div>`;
+            });
+
+            if (remaining > 0) {
+                html += `<div class="more-tasks">+${remaining} more</div>`;
+            }
+
+            html += '</div></div>';
             return html;
         }
 
