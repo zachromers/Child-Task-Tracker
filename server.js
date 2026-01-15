@@ -82,6 +82,19 @@ async function initDatabase() {
 
             saveDatabase();
         }
+
+        // Check if reset_day column exists in tasks
+        const taskColumns = db.exec("PRAGMA table_info(tasks)");
+        const hasResetDay = taskColumns[0]?.values.some(col => col[1] === 'reset_day');
+
+        if (!hasResetDay) {
+            console.log('Migrating database: Adding reset_day column to tasks');
+            db.run('ALTER TABLE tasks ADD COLUMN reset_day INTEGER');
+            // Set defaults: 0 (Sunday) for weekly, 1 (1st of month) for monthly
+            db.run("UPDATE tasks SET reset_day = 0 WHERE frequency = 'weekly'");
+            db.run("UPDATE tasks SET reset_day = 1 WHERE frequency = 'monthly'");
+            saveDatabase();
+        }
     } else {
         // Create tables with user_id support
         db.run(`
@@ -103,6 +116,7 @@ async function initDatabase() {
                 category_id INTEGER NOT NULL,
                 completed INTEGER DEFAULT 0,
                 last_completed DATETIME,
+                reset_day INTEGER,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
             )
@@ -200,40 +214,12 @@ app.get(BASE_PATH + '/api/tasks', (req, res) => {
             ORDER BY categories.name, tasks.created_at DESC
         `, [req.userId]);
     }
-
-    // Check if tasks need to be reset based on frequency
-    const now = new Date();
-    tasks = tasks.map(task => {
-        if (task.completed && task.last_completed) {
-            const lastCompleted = new Date(task.last_completed);
-            let shouldReset = false;
-
-            if (task.frequency === 'daily') {
-                shouldReset = now.toDateString() !== lastCompleted.toDateString();
-            } else if (task.frequency === 'weekly') {
-                const weekAgo = new Date(now);
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                shouldReset = lastCompleted < weekAgo;
-            } else if (task.frequency === 'monthly') {
-                const monthAgo = new Date(now);
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                shouldReset = lastCompleted < monthAgo;
-            }
-
-            if (shouldReset && task.frequency !== 'one-time') {
-                runQuery('UPDATE tasks SET completed = 0 WHERE id = ? AND user_id = ?', [task.id, req.userId]);
-                task.completed = 0;
-            }
-        }
-        return task;
-    });
-
     res.json(tasks);
 });
 
 // Add a new task for current user
 app.post(BASE_PATH + '/api/tasks', (req, res) => {
-    const { title, frequency, category_id } = req.body;
+    const { title, frequency, category_id, reset_day } = req.body;
     if (!title || !frequency || !category_id) {
         return res.status(400).json({ error: 'Title, frequency, and category_id are required' });
     }
@@ -242,8 +228,15 @@ app.post(BASE_PATH + '/api/tasks', (req, res) => {
     if (!category) {
         return res.status(404).json({ error: 'Category not found' });
     }
+    // Set default reset_day based on frequency
+    let finalResetDay = reset_day;
+    if (finalResetDay === undefined || finalResetDay === null) {
+        if (frequency === 'weekly') finalResetDay = 0; // Sunday
+        else if (frequency === 'monthly') finalResetDay = 1; // 1st of month
+        else finalResetDay = null;
+    }
     try {
-        const result = runQuery('INSERT INTO tasks (user_id, title, frequency, category_id) VALUES (?, ?, ?, ?)', [req.userId, title, frequency, category_id]);
+        const result = runQuery('INSERT INTO tasks (user_id, title, frequency, category_id, reset_day) VALUES (?, ?, ?, ?, ?)', [req.userId, title, frequency, category_id, finalResetDay]);
         const task = queryOne(`
             SELECT tasks.*, categories.name as category_name
             FROM tasks
@@ -267,6 +260,17 @@ app.patch(BASE_PATH + '/api/tasks/:id/toggle', (req, res) => {
     const lastCompleted = newCompleted ? new Date().toISOString() : null;
     runQuery('UPDATE tasks SET completed = ?, last_completed = ? WHERE id = ? AND user_id = ?', [newCompleted, lastCompleted, id, req.userId]);
     res.json({ ...task, completed: newCompleted, last_completed: lastCompleted });
+});
+
+// Reset a task (mark as incomplete, called by client when reset time has passed)
+app.patch(BASE_PATH + '/api/tasks/:id/reset', (req, res) => {
+    const { id } = req.params;
+    const task = queryOne('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.userId]);
+    if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+    }
+    runQuery('UPDATE tasks SET completed = 0 WHERE id = ? AND user_id = ?', [id, req.userId]);
+    res.json({ ...task, completed: 0 });
 });
 
 // Delete a task (only if owned by current user)

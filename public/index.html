@@ -404,11 +404,50 @@
                 <h2>Add New Task</h2>
                 <div class="form-row">
                     <input type="text" id="task-name" placeholder="Task description">
-                    <select id="task-frequency">
+                    <select id="task-frequency" onchange="onFrequencyChange()">
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                         <option value="one-time">One-time</option>
+                    </select>
+                    <select id="weekly-reset-day" style="display:none">
+                        <option value="0">Resets Sunday</option>
+                        <option value="1">Resets Monday</option>
+                        <option value="2">Resets Tuesday</option>
+                        <option value="3">Resets Wednesday</option>
+                        <option value="4">Resets Thursday</option>
+                        <option value="5">Resets Friday</option>
+                        <option value="6">Resets Saturday</option>
+                    </select>
+                    <select id="monthly-reset-day" style="display:none">
+                        <option value="1">Resets 1st</option>
+                        <option value="2">Resets 2nd</option>
+                        <option value="3">Resets 3rd</option>
+                        <option value="4">Resets 4th</option>
+                        <option value="5">Resets 5th</option>
+                        <option value="6">Resets 6th</option>
+                        <option value="7">Resets 7th</option>
+                        <option value="8">Resets 8th</option>
+                        <option value="9">Resets 9th</option>
+                        <option value="10">Resets 10th</option>
+                        <option value="11">Resets 11th</option>
+                        <option value="12">Resets 12th</option>
+                        <option value="13">Resets 13th</option>
+                        <option value="14">Resets 14th</option>
+                        <option value="15">Resets 15th</option>
+                        <option value="16">Resets 16th</option>
+                        <option value="17">Resets 17th</option>
+                        <option value="18">Resets 18th</option>
+                        <option value="19">Resets 19th</option>
+                        <option value="20">Resets 20th</option>
+                        <option value="21">Resets 21st</option>
+                        <option value="22">Resets 22nd</option>
+                        <option value="23">Resets 23rd</option>
+                        <option value="24">Resets 24th</option>
+                        <option value="25">Resets 25th</option>
+                        <option value="26">Resets 26th</option>
+                        <option value="27">Resets 27th</option>
+                        <option value="28">Resets 28th</option>
                     </select>
                     <button class="btn-primary" onclick="addTask()">Add Task</button>
                 </div>
@@ -462,6 +501,82 @@
         let calendarTasks = [];
         let currentCalendarView = 'today';
 
+        function onFrequencyChange() {
+            const frequency = document.getElementById('task-frequency').value;
+            const weeklySelect = document.getElementById('weekly-reset-day');
+            const monthlySelect = document.getElementById('monthly-reset-day');
+
+            weeklySelect.style.display = frequency === 'weekly' ? 'block' : 'none';
+            monthlySelect.style.display = frequency === 'monthly' ? 'block' : 'none';
+        }
+
+        // Check if a task should be reset based on frequency and reset_day
+        function shouldResetTask(task) {
+            if (!task.completed || !task.last_completed || task.frequency === 'one-time') {
+                return false;
+            }
+
+            const now = new Date();
+            const lastCompleted = new Date(task.last_completed);
+
+            // Get midnight today in local timezone
+            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            // Get midnight of last completed day
+            const lastCompletedMidnight = new Date(lastCompleted.getFullYear(), lastCompleted.getMonth(), lastCompleted.getDate());
+
+            if (task.frequency === 'daily') {
+                // Reset if we've passed midnight since completion
+                return todayMidnight > lastCompletedMidnight;
+            } else if (task.frequency === 'weekly') {
+                const resetDay = task.reset_day ?? 0; // 0 = Sunday
+                const currentDayOfWeek = now.getDay();
+
+                // Find the most recent reset day (could be today or in the past)
+                const daysSinceResetDay = (currentDayOfWeek - resetDay + 7) % 7;
+                const lastResetDate = new Date(todayMidnight);
+                lastResetDate.setDate(lastResetDate.getDate() - daysSinceResetDay);
+
+                // If we're on the reset day, the reset happens at midnight
+                // Reset if last completed was before the most recent reset day midnight
+                return lastCompletedMidnight < lastResetDate;
+            } else if (task.frequency === 'monthly') {
+                const resetDay = task.reset_day ?? 1; // 1 = 1st of month
+
+                // Find the most recent reset day
+                let lastResetDate = new Date(now.getFullYear(), now.getMonth(), resetDay);
+
+                // If we haven't reached the reset day this month yet, use last month's
+                if (now.getDate() < resetDay) {
+                    lastResetDate.setMonth(lastResetDate.getMonth() - 1);
+                }
+
+                // Reset if last completed was before the most recent reset day
+                return lastCompletedMidnight < lastResetDate;
+            }
+
+            return false;
+        }
+
+        // Reset tasks that need to be reset
+        async function checkAndResetTasks(taskList) {
+            const resetPromises = [];
+
+            for (const task of taskList) {
+                if (shouldResetTask(task)) {
+                    resetPromises.push(
+                        fetch(`/tasks/api/tasks/${task.id}/reset`, { method: 'PATCH' })
+                            .then(() => { task.completed = 0; })
+                    );
+                }
+            }
+
+            if (resetPromises.length > 0) {
+                await Promise.all(resetPromises);
+            }
+
+            return taskList;
+        }
+
         async function loadCategories() {
             const response = await fetch('/tasks/api/categories');
             categories = await response.json();
@@ -474,6 +589,7 @@
             const url = filterCategory ? `/tasks/api/tasks?category_id=${filterCategory}` : '/tasks/api/tasks';
             const response = await fetch(url);
             tasks = await response.json();
+            await checkAndResetTasks(tasks);
             renderTasks();
         }
 
@@ -633,12 +749,20 @@
                 return;
             }
 
+            // Get reset_day based on frequency
+            let reset_day = null;
+            if (frequency === 'weekly') {
+                reset_day = parseInt(document.getElementById('weekly-reset-day').value);
+            } else if (frequency === 'monthly') {
+                reset_day = parseInt(document.getElementById('monthly-reset-day').value);
+            }
+
             // Create task for each selected category
             const promises = selectedCategories.map(category_id =>
                 fetch('/tasks/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, frequency, category_id })
+                    body: JSON.stringify({ title, frequency, category_id, reset_day })
                 })
             );
 
@@ -648,6 +772,9 @@
             document.querySelectorAll('input[name="task-categories"]').forEach(cb => cb.checked = false);
             const selectAll = document.getElementById('select-all-categories');
             if (selectAll) selectAll.checked = false;
+            // Reset frequency selects
+            document.getElementById('task-frequency').value = 'daily';
+            onFrequencyChange();
             loadTasks();
         }
 
@@ -688,6 +815,7 @@
         async function loadCalendarTasks() {
             const response = await fetch('/tasks/api/tasks');
             calendarTasks = await response.json();
+            await checkAndResetTasks(calendarTasks);
             renderCalendar();
         }
 
