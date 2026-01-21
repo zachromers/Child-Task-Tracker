@@ -122,14 +122,64 @@ async function initDatabase() {
             )
         `);
 
+        db.run(`
+            CREATE TABLE IF NOT EXISTS task_completions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                completed_date TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(task_id, completed_date),
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+            )
+        `);
+
         saveDatabase();
     }
+
+    // Check if task_completions table exists for existing databases and create if missing
+    const completionsTableInfo = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='task_completions'");
+    const completionsTableExists = completionsTableInfo.length > 0 && completionsTableInfo[0].values.length > 0;
+
+    if (!completionsTableExists) {
+        console.log('Migrating database: Adding task_completions table');
+        db.run(`
+            CREATE TABLE IF NOT EXISTS task_completions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                completed_date TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(task_id, completed_date),
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+            )
+        `);
+        saveDatabase();
+    }
+
+    // Cleanup old completion records (older than 3 months)
+    cleanupOldCompletions();
 }
 
 function saveDatabase() {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
+}
+
+// Cleanup completion records older than 3 months
+function cleanupOldCompletions() {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const cutoffDate = threeMonthsAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    try {
+        db.run('DELETE FROM task_completions WHERE completed_date < ?', [cutoffDate]);
+        saveDatabase();
+        console.log(`Cleaned up completion records older than ${cutoffDate}`);
+    } catch (err) {
+        console.error('Error cleaning up old completions:', err);
+    }
 }
 
 // Helper to convert sql.js results to array of objects
@@ -259,6 +309,21 @@ app.patch(BASE_PATH + '/api/tasks/:id/toggle', (req, res) => {
     const newCompleted = task.completed ? 0 : 1;
     const lastCompleted = newCompleted ? new Date().toISOString() : null;
     runQuery('UPDATE tasks SET completed = ?, last_completed = ? WHERE id = ? AND user_id = ?', [newCompleted, lastCompleted, id, req.userId]);
+
+    // Track completion in history
+    const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    if (newCompleted) {
+        // Insert completion record
+        try {
+            runQuery('INSERT OR IGNORE INTO task_completions (task_id, user_id, completed_date) VALUES (?, ?, ?)', [id, req.userId, todayDate]);
+        } catch (err) {
+            // Ignore duplicate key errors
+        }
+    } else {
+        // Remove completion record for today
+        runQuery('DELETE FROM task_completions WHERE task_id = ? AND user_id = ? AND completed_date = ?', [id, req.userId, todayDate]);
+    }
+
     res.json({ ...task, completed: newCompleted, last_completed: lastCompleted });
 });
 
@@ -326,6 +391,30 @@ app.delete(BASE_PATH + '/api/tasks/:id', (req, res) => {
     }
     runQuery('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, req.userId]);
     res.json({ success: true });
+});
+
+// Get completion history for a date range
+app.get(BASE_PATH + '/api/completions', (req, res) => {
+    const { start_date, end_date } = req.query;
+
+    if (!start_date || !end_date) {
+        return res.status(400).json({ error: 'start_date and end_date are required (YYYY-MM-DD format)' });
+    }
+
+    // Run cleanup periodically when fetching completions
+    cleanupOldCompletions();
+
+    const completions = queryAll(`
+        SELECT task_completions.*, tasks.title as task_title
+        FROM task_completions
+        JOIN tasks ON task_completions.task_id = tasks.id
+        WHERE task_completions.user_id = ?
+          AND task_completions.completed_date >= ?
+          AND task_completions.completed_date <= ?
+        ORDER BY task_completions.completed_date DESC
+    `, [req.userId, start_date, end_date]);
+
+    res.json(completions);
 });
 
 // Start server after database initialization

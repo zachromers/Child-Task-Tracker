@@ -877,6 +877,40 @@
         let calendarTasks = [];
         let currentCalendarView = 'month';
         let calendarDate = new Date();
+        let completionHistory = new Map(); // Map of "taskId-YYYY-MM-DD" => completion record
+
+        // Helper to format date as YYYY-MM-DD
+        function formatDateKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Check if a task was completed on a specific date
+        function wasTaskCompletedOnDate(taskId, date) {
+            const dateKey = formatDateKey(date);
+            return completionHistory.has(`${taskId}-${dateKey}`);
+        }
+
+        // Load completion history for a date range
+        async function loadCompletionHistory(startDate, endDate) {
+            const startStr = formatDateKey(startDate);
+            const endStr = formatDateKey(endDate);
+
+            try {
+                const response = await fetch(`/tasks/api/completions?start_date=${startStr}&end_date=${endStr}`);
+                const completions = await response.json();
+
+                // Clear and repopulate the map
+                completionHistory.clear();
+                completions.forEach(c => {
+                    completionHistory.set(`${c.task_id}-${c.completed_date}`, c);
+                });
+            } catch (err) {
+                console.error('Error loading completion history:', err);
+            }
+        }
 
         function onFrequencyChange() {
             const frequency = document.getElementById('task-frequency').value;
@@ -1297,12 +1331,23 @@
             const response = await fetch('/tasks/api/tasks');
             calendarTasks = await response.json();
             await checkAndResetTasks(calendarTasks);
+
+            // Calculate date range for completion history (3 months back from current view)
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            const futureDate = new Date(calendarDate);
+            futureDate.setMonth(futureDate.getMonth() + 2); // Include some future buffer
+
+            await loadCompletionHistory(threeMonthsAgo, futureDate);
             renderCalendar();
         }
 
         function getTasksForDate(date, filteredTasks) {
             const dayOfWeek = date.getDay();
             const dayOfMonth = date.getDate();
+            const today = new Date();
+            const isToday = isSameDay(date, today);
+            const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
             return filteredTasks.filter(task => {
                 if (task.frequency === 'daily') return true;
@@ -1316,6 +1361,20 @@
                 }
                 if (task.frequency === 'one-time') return true;
                 return false;
+            }).map(task => {
+                // Determine display completion status based on date
+                let displayCompleted;
+                if (isToday) {
+                    // For today, use current task completion status
+                    displayCompleted = task.completed;
+                } else if (isPast) {
+                    // For past dates, check completion history
+                    displayCompleted = wasTaskCompletedOnDate(task.id, date);
+                } else {
+                    // For future dates, show as not completed
+                    displayCompleted = false;
+                }
+                return { ...task, displayCompleted, isToday, isPast };
             });
         }
 
@@ -1370,11 +1429,13 @@
                 html += '<div class="no-tasks">No tasks scheduled for this day.</div>';
             } else {
                 dayTasks.forEach(task => {
+                    const canToggle = task.isToday;
                     html += `
-                        <div class="calendar-day-task-item ${task.completed ? 'completed' : ''}">
+                        <div class="calendar-day-task-item ${task.displayCompleted ? 'completed' : ''}">
                             <input type="checkbox" class="task-checkbox"
-                                   ${task.completed ? 'checked' : ''}
-                                   onchange="toggleTask(${task.id})">
+                                   ${task.displayCompleted ? 'checked' : ''}
+                                   ${canToggle ? `onchange="toggleTask(${task.id})"` : 'disabled'}
+                                   ${!canToggle ? 'style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                             <div class="calendar-day-task-title">${task.title}</div>
                             <span class="frequency-badge frequency-${task.frequency}">${task.frequency}</span>
                             <span style="color: #888; font-size: 12px;">${task.category_name}</span>
@@ -1414,9 +1475,12 @@
                         <div class="calendar-week-tasks">`;
 
                 dayTasks.forEach(task => {
+                    const canToggle = task.isToday;
                     html += `
-                        <div class="calendar-week-task calendar-task-dot ${task.frequency} ${task.completed ? 'completed' : ''}"
-                             onclick="toggleTask(${task.id})" title="${task.title} (${task.category_name})">
+                        <div class="calendar-week-task calendar-task-dot ${task.frequency} ${task.displayCompleted ? 'completed' : ''}"
+                             ${canToggle ? `onclick="toggleTask(${task.id})"` : ''}
+                             ${!canToggle ? 'style="cursor: default;"' : ''}
+                             title="${task.title} (${task.category_name})${!canToggle ? ' - View only' : ''}">
                             ${task.title}
                         </div>
                     `;
@@ -1498,8 +1562,11 @@
             const remaining = tasks.length - maxVisible;
 
             visibleTasks.forEach(task => {
-                html += `<div class="calendar-task-dot ${task.frequency} ${task.completed ? 'completed' : ''}"
-                             onclick="toggleTask(${task.id})" title="${task.title}">${task.title}</div>`;
+                const canToggle = task.isToday;
+                html += `<div class="calendar-task-dot ${task.frequency} ${task.displayCompleted ? 'completed' : ''}"
+                             ${canToggle ? `onclick="toggleTask(${task.id})"` : ''}
+                             ${!canToggle ? 'style="cursor: default;"' : ''}
+                             title="${task.title}${!canToggle ? ' - View only' : ''}">${task.title}</div>`;
             });
 
             if (remaining > 0) {
